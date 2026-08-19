@@ -2,7 +2,7 @@ git config --global user.name Carloss113
 git config --global user.email karloskadu2706@gmail.com
 
 
-Para executar: npm run web
+
 
 
 -- Criar o Projeto
