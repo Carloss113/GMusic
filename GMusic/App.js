@@ -10,7 +10,7 @@ export default function App() {
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
 
       <StatusBar style="light" translucent />
-      <MusicPlayer />
+      < MusicPlayer />
     </SafeAreaProvider>
   );
 }
