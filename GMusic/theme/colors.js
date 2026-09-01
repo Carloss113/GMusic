@@ -1,4 +1,4 @@
-const color = {
+const colors = {
 
     background: '#0D1117',
   backgroundSoft: '#151B24',
@@ -16,4 +16,4 @@ const color = {
   shadow: '#000000'
 };
 
-export default color;
+export default colors;

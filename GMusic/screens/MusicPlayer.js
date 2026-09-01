@@ -1,70 +1,119 @@
-import React, {useState } from 'react'
-import { StyleSheet, Text, View, FlatList, Image, useWindowDimensions
- } from 'react-native'
+import React, { useEffect, useMemo, useState} from 'react'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import { setAudioModeAsync, useAudioPlaylist, useAudioPlaylistStatus,} from 'expo-audio';
+import {
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { songs } from '../model/data';
+import colors from '../theme/colors';
 
-import {songs} from '../model/data';
-
-import color from '../theme/color';
+const audioSources = songs.map((song) => song.url);
 
 export default function MusicPlayer() {
   const { width } = useWindowDimensions();
-  const [selectIndex, setSelectIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const currentsong = songs [selectIndex];
-  const artworkSize = Math.min(width - 40, 380);
+  const playlistOptions = useMemo(
+    () => ({
+      sources: audioSources,
+      loop: 'none',
+      updateInterval: 250,
 
+    })
+  );
+
+  const playlist = useAudioPlaylist(playlistOptions);
+  const status = useAudioPlaylistStatus(playlist);
+
+
+  const currentSong = songs[selectedIndex];
+  const artworkSize = Math.min(width-40, 380);
+
+  useEffect(() => {
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: false,
+      interruptionMode: 'doNotMix',
+    })
+  }, []);
+
+  useEffect(() => {
+    if (Number.isInteger(status.currentIndex)) {
+      setSelectedIndex(status.currentIndex);
+    }
+  }, [status.currentIndex]);
+
+  function selectSong(index) {
+    if (index < 0 || index >= songs.length || index === selectedIndex ) {
+      return;
+    }
+    const shouldResume = status.playing;
+    selectedIndex(index);
+    playlist.skipTo(index);
+
+    if (shouldResume ) {
+      playlist.play;
+    }
+
+  }
+
+  function handlePlayPause () {
+    if (status.playing) {
+      playlist.pause(); 
+
+    } else {
+      playlist.play();
+    }
+  }
 
   function handleMomentumEnd(event) {
     const offset = event.nativeEvent.contentOffset.x;
     const index = Math.round(offset / width);
-    setSelectIndex(index);
+    setSelectedIndex(index);
   }
-
 
   function renderArtwork({ item }) {
     return (
-      <View style={[styles.artworkPage, {width }]}>
+      <View style={[styles.artworkPage, { width }]}>
         <Image
-        source={item.artwork}
-          style={[styles.artwork, {width: artworkSize, height: artworkSize },
-            
+          source={item.artwork}
+          style={[styles.artwork,
+          { width: artworkSize, height: artworkSize },
           ]}
-
         />
-
       </View>
     )
   }
-
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.eyebrow}>TOCANDO AGORA</Text>
         <Text style={styles.counter}>
-          {selectIndex + 1} de {songs.length}
-        </Text>
-        <Text style={styles.description}>
-          Nosso player começa aqui
+          {selectedIndex + 1} de {songs.length}
         </Text>
       </View>
 
-      <FlatList
+      <FlatList 
         data={songs}
         horizontal
         pagingEnabled
         renderItem={renderArtwork}
         keyExtractor={(item) => String(item.id)}
-        showHorizontalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleMomentumEnd}
       />
 
-
-
       <View style={styles.metadata}>
-        <Text style={styles.songTitle}>{currentsong.title}</Text>
-        <Text style={styles.songArtist}>{currentsong.artist}</Text>
+        <Text style={styles.songTitle}>{currentSong.title}</Text>
+        <Text style={styles.songArtist}>{currentSong.artist}</Text>
       </View>
     </SafeAreaView>
   )
@@ -73,9 +122,8 @@ export default function MusicPlayer() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: color.background
+    backgroundColor: colors.background,
   },
-
   header: {
     height: 70,
     paddingHorizontal: 20,
@@ -83,7 +131,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-
   content: {
     flex: 1,
     alignItems: 'center',
@@ -91,50 +138,47 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   eyebrow: {
-    color: color.primary,
+    color: colors.primary,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.8
   },
-
   counter: {
-    color: color.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
   },
-
-
   title: {
     marginTop: 8,
-    color: color.text,
+    color: colors.text,
     fontSize: 32,
-    fontWeight: 800
+    fontWeight: 800,
   },
   description: {
     marginTop: 10,
-    color: color.textSecondary
+    color: colors.textSecondary,
   },
   artworkPage: {
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   artwork: {
-    borderRadius: 24
+    borderRadius: 24,
   },
-  metadata : {
+  metadata: {
     minHeight: 110,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24
+    paddingHorizontal: 24,
   },
   songTitle: {
-    color: color.text,
+    color: colors.text,
     fontSize: 22,
     fontWeight: '800',
     textAlign: 'center'
   },
   songArtist: {
     marginTop: 6,
-    color: color.textSecondary,
-    fontSize: 14
+    color: colors.textSecondary,
+    fontSize: 14,
   }
 })
