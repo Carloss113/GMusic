@@ -1,18 +1,26 @@
-import React, { useEffect, useMemo, useRef, useState} from 'react'
-import Ionicons from '@expo/vector-icons/Ionicons'
+import React, { useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import Ionicons from '@expo/vector-icons/Ionicons';
+import Slider from '@react-native-community/slider';
+import {LinearGradient } from 'expo-linear-gradient'
 import { setAudioModeAsync, useAudioPlaylist, useAudioPlaylistStatus,} from 'expo-audio';
 import {
+  Animated,
   FlatList,
   Image,
+  Platform,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   useWindowDimensions,
   View
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import IconButton  from '../components/IconButton';
 import  songs  from '../model/data';
 import colors from '../theme/colors';
+import formatTime from '../utils/formatTime';
 
 const audioSources = songs.map((song) => song.url);
 
@@ -51,25 +59,43 @@ export default function MusicPlayer() {
       height * (isCompact ? 0.34 : 0.4)
     ), 420
   );
+    const duration = Number.isFinite(status.duration) ? status.duration : 0;
+    const curreTime = Number.isFinite(status.currentTime) ? status.currentTime : 0;
+    const displayPosition = isSeeking ? seekPotion : curreTime;
+    const playerUnavailable = !status.isLoaded || status. isBuffering;
     
-  
-  useEffect(() => {
-    setAudioModeAsync({
-      playsInSilentMode: true,
-      shouldPlayInBackground: false,
-      interruptionMode: 'doNotMix',
-    })
-  }, []);
+    useEffect(() => {
+      setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: false,
+        interruptionMode: 'doNotMix',
+      })
+      .catch(() => {setErrorMensage('Não foi possivel configurar a reprodução de áudio.');
+        
+      })
+    }, []);
+    
+    useEffect(() => {
+      playlist.loop = repeatOne ? 'single' : 'none';
+    }, [playlist, repeatOne]);
 
-  useEffect(() => {
-    if (Number.isInteger(status.currentIndex)) {
+    useEffect(() => {
+    if (Number.isInteger(status.currentIndex) 
+    && status.currentIndex >= 0 &&
+  status.currentIndex < songs.length
+) {
       setSelectedIndex(status.currentIndex);
     }
   }, [status.currentIndex]);
 
+
   useEffect(() => {
-    playlist.loop = repeatOne ? 'single' : 'none';
-  }, [playlist, repeatOne]);
+   listRef.current?.scrollToIndex({
+    index: selectedIndex,
+    Animated: true,
+   }) 
+  }, [selectedIndex, width]);
+
 
   function selectSong(index) {
     if (index < 0 || index >= songs.length || index === selectedIndex ) {
