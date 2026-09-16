@@ -60,8 +60,8 @@ export default function MusicPlayer() {
     ), 420
   );
     const duration = Number.isFinite(status.duration) ? status.duration : 0;
-    const curreTime = Number.isFinite(status.currentTime) ? status.currentTime : 0;
-    const displayPosition = isSeeking ? seekPotion : curreTime;
+    const currentTime = Number.isFinite(status.currentTime) ? status.currentTime : 0;
+    const displayPosition = isSeeking ? seekPotion : currentTime;
     const playerUnavailable = !status.isLoaded || status. isBuffering;
     
     useEffect(() => {
@@ -96,35 +96,81 @@ export default function MusicPlayer() {
    }) 
   }, [selectedIndex, width]);
 
+  const reportPlaybackError = useCallback(() => {
+    setErrorMensage('Não foi possível executar esta ação no player.');
+  }, []);
 
-  function selectSong(index) {
+
+  const selectSong = useCallback ((index) => {
     if (index < 0 || index >= songs.length || index === selectedIndex ) {
       return;
     }
-    const shouldResume = status.playing;
-    selectedIndex(index);
-    playlist.skipTo(index);
 
-    if (shouldResume ) {
-      playlist.play;
+    try {
+      
+      const shouldResume = status.playing;
+      selectedIndex(index);
+      playlist.skipTo(index);
+  
+      if (shouldResume ) {
+        playlist.play;
+      }
+    } catch  {
+      reportPlaybackError();
+      
     }
 
-  }
+  }, [playlist, reportPlaybackError, selectedIndex, status.playing]);
 
-  function handlePlayPause () {
-    if (status.playing) {
+  const handlePlayPause = useCallback (() => {
+    try {
+      if (status.playing) {
       playlist.pause(); 
-
     } else {
       playlist.play();
     }
-  }
+    } catch {
+      reportPlaybackError();
+    }
+    
 
-  function handleMomentumEnd(event) {
+  }, [playlist, reportPlaybackError, status.playing]);
+
+  const handleMomentumEnd = useCallback ((event) => {
     const offset = event.nativeEvent.contentOffset.x;
     const index = Math.round(offset / width);
     selectSong(index);
-  }
+  }, [selectSong, width])
+
+  const hadleNext = useCallback(() => {
+    const nextIndex = (selectedIndex + 1) % songs.length;
+    selectSong(nextIndex);
+
+  }, [selectSong. selectedIndex]);
+
+
+  const handlePrevious = useCallback(async() => {
+    try {
+      if (currentTime > 3) {
+        await playlist.seekTo(0);
+        return;
+      }
+      const previousIndex = (selectedIndex - 1 + songs.length) % songs.length;
+      selectSong(previousIndex)
+    } catch  {
+      reportPlaybackError();
+    }
+  }, [currentTime, playlist, reportPlaybackError, selectSong, selectedIndex]);
+
+  const handleSeekComplete = useCallback (async (value) => {
+    try {
+      await playlist.seekTo(value)
+    } catch  {
+      reportPlaybackError();
+    } finally {
+      setIsSeeking(false);
+    }
+  }, [playlist, reportPlaybackError]);
 
   function renderArtwork({ item }) {
     return (
